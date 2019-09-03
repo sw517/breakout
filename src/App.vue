@@ -12,8 +12,8 @@
           </div>
         </div>
         <div class="controls__directions">
-          <div class="controls__btn left" />
-          <div class="controls__btn right" />
+          <div class="controls__btn left">&lt;</div>
+          <div class="controls__btn right">&gt;</div>
         </div>
       </div>
     </div>
@@ -86,7 +86,7 @@ html,body {
   border-radius: 4px;
   padding: 10px;
   background-color: #000;
-  height: 56%;
+  height: 50%;
   box-sizing: content-box;
 }
 
@@ -97,7 +97,15 @@ html,body {
   flex-grow: 1;
 
   &__btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     background-color: #333;
+    color: #b1b1b1;
+
+    &.pressed {
+      box-shadow: inset 0 0 4px 3px #111;
+    }
   }
 
   &__menu {
@@ -105,12 +113,8 @@ html,body {
   }
 
   &__start {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     width: 100px;
     height: 30px;
-    color: #b1b1b1;
   }
 
   &__directions {

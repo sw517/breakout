@@ -3,17 +3,46 @@
     <div class="gamepad">
       <div class="power-led" />
       <div class="screen">
-        <BreakoutCanvas />
+        <BreakoutCanvas
+          :leftBtnPressed="leftBtnPressed"
+          :rightBtnPressed="rightBtnPressed"
+          :startBtnPressed="startBtnPressed"
+        />
       </div>
       <div class="controls">
         <div class="controls__menu">
-          <div class="controls__btn controls__start">
+          <div
+            @mousedown="onBtnPressed('start')"
+            @mouseup="onBtnPressed('start')"
+            @touchstart="onBtnPressed('start')"
+            @touchend="onBtnPressed('start')"
+            class="controls__btn controls__start"
+            :class="{ 'pressed' : startBtnPressed }"
+          >
             Start
           </div>
         </div>
         <div class="controls__directions">
-          <div class="controls__btn left">&lt;</div>
-          <div class="controls__btn right">&gt;</div>
+          <div
+            @mousedown="onBtnPressed('left')"
+            @mouseup="onBtnPressed('left')"
+            @touchstart="onBtnPressed('left')"
+            @touchend="onBtnPressed('left')"
+            class="controls__btn left"
+            :class="{ 'pressed' : leftBtnPressed }"
+          >
+            &lt;
+          </div>
+          <div
+            @mousedown="onBtnPressed('right')"
+            @mouseup="onBtnPressed('right')"
+            @touchstart="onBtnPressed('right')"
+            @touchend="onBtnPressed('right')"
+            class="controls__btn right"
+            :class="{ 'pressed' : rightBtnPressed }"
+          >
+            &gt;
+          </div>
         </div>
       </div>
     </div>
@@ -27,6 +56,27 @@ export default {
   name: 'app',
   components: {
     BreakoutCanvas,
+  },
+  data() {
+    return {
+      leftBtnPressed: false,
+      rightBtnPressed: false,
+      startBtnPressed: false,
+    };
+  },
+  methods: {
+    onBtnPressed(direction) {
+      switch (direction) {
+        case 'left':
+          this.leftBtnPressed = !this.leftBtnPressed;
+          break;
+        case 'right':
+          this.rightBtnPressed = !this.rightBtnPressed;
+          break;
+        default:
+          this.startBtnPressed = !this.startBtnPressed;
+      }
+    },
   },
 };
 </script>
@@ -102,6 +152,7 @@ html,body {
     align-items: center;
     background-color: #333;
     color: #b1b1b1;
+    user-select: none;
 
     &.pressed {
       box-shadow: inset 0 0 4px 3px #111;

@@ -14,8 +14,29 @@ import { setInterval, clearInterval, setTimeout } from 'timers';
 
 export default {
   name: 'Canvas',
+  props: {
+    leftBtnPressed: {
+      type: Boolean,
+      required: true,
+    },
+    rightBtnPressed: {
+      type: Boolean,
+      required: true,
+    },
+    startBtnPressed: {
+      type: Boolean,
+      required: true,
+    },
+  },
   data() {
     return this.getInitialState();
+  },
+  watch: {
+    startBtnPressed(pressed) {
+      if (pressed && !this.gameActive) {
+        this.onSpacePressed();
+      }
+    },
   },
   mounted() {
     this.initGameProperties();
@@ -37,9 +58,13 @@ export default {
         leftPressed: false,
         gameActive: false,
         instructionsVisible: true,
-        countdown: 3,
-        countdownVisible: false,
+        countdown: {
+          visible: false,
+          time: 3000,
+          number: 3,
+        },
         gameEnded: false,
+        win: false,
         score: 0,
         canvas: {
           width: 250,
@@ -67,6 +92,7 @@ export default {
           padding: 10,
           xOffset: 30,
           yOffset: 30,
+          points: 10,
           instances: [],
         },
       };
@@ -92,6 +118,12 @@ export default {
      * The status is 1 if the block is visible, 0 if not.
      */
     initBricks() {
+      const width = (
+        this.getCanvasWidth()
+        - (this.bricks.xOffset * 2)
+        - (this.bricks.padding * 4))
+        / 5;
+      this.bricks.width = width;
       for (let c = 0; c < this.bricks.columns; c += 1) {
         this.bricks.instances[c] = [];
         for (let r = 0; r < this.bricks.rows; r += 1) {
@@ -121,6 +153,9 @@ export default {
       this.ball.dx = this.ball.dx < 0 ? -speed : speed;
       this.ball.dy = this.ball.dy < 0 ? -speed : speed;
     },
+    getBallSpeed() {
+      return Math.abs(this.ball.dx);
+    },
     getCanvasWidth() {
       return this.canvas.width;
     },
@@ -136,7 +171,6 @@ export default {
       return styles.getPropertyValue('height').replace('px', '');
     },
     initGame() {
-      this.gameActive = true;
       this.changeBallSpeed(2);
       this.interval = setInterval(this.draw, 10);
     },
@@ -151,7 +185,7 @@ export default {
       if (this.instructionsVisible) {
         this.drawIntructions();
       }
-      if (this.countdownVisible) {
+      if (this.countdown.visible) {
         this.drawCountdown();
       }
       if (this.gameEnded) {
@@ -221,17 +255,19 @@ export default {
       this.ctx.font = '18px Courier';
       this.ctx.fillStyle = this.canvas.color;
       this.ctx.fillText(
-        this.countdown,
+        this.countdown.number,
         (this.getCanvasWidth() / 2) - 5,
         (this.getCanvasHeight() / 2) + 30,
       );
     },
     drawGameOver() {
+      const gameText = this.win ? 'WINNER!' : 'GAME OVER';
+      const textOffset = this.win ? 40 : 50;
       this.ctx.font = '18px Courier';
       this.ctx.fillStyle = this.canvas.color;
       this.ctx.fillText(
-        'Game Over',
-        (this.getCanvasWidth() / 2) - 50,
+        gameText,
+        (this.getCanvasWidth() / 2) - textOffset,
         (this.getCanvasHeight() / 2) + 30,
       );
 
@@ -262,7 +298,17 @@ export default {
         // Check if ball is between the sides of the paddle.
         if (this.ball.xPos > this.paddle.xPos
           && this.ball.xPos < this.paddle.xPos + this.paddle.width) {
-          this.ball.dy = -(this.ball.dy);
+          // Ensure the ball goes only upwards because the ball
+          // can sometimes overlap the paddle and get caught inside it.
+          this.ball.dy = -Math.abs(this.ball.dy);
+
+          // Make ball go left if hits the left side of the paddle, else
+          // make the ball go right.
+          if (this.ball.xPos < this.paddle.xPos + (this.paddle.width / 2)) {
+            this.ball.dx = -Math.abs(this.ball.dx);
+          } else {
+            this.ball.dx = Math.abs(this.ball.dx);
+          }
         }
         // Check if ball hits bottom of canvas.
       } else if (this.ball.yPos > this.canvas.height - this.ball.diameter) {
@@ -273,11 +319,11 @@ export default {
      * Update the position of the paddle.
      */
     movePaddle() {
-      if (this.rightPressed) {
+      if (this.rightPressed || this.$props.rightBtnPressed) {
         if (this.paddle.xPos + this.paddle.width < this.canvas.width) {
           this.paddle.xPos += 7;
         }
-      } else if (this.leftPressed) {
+      } else if (this.leftPressed || this.$props.leftBtnPressed) {
         if (this.paddle.xPos >= 0) {
           this.paddle.xPos -= 7;
         }
@@ -292,13 +338,14 @@ export default {
         for (let r = 0; r < this.bricks.rows; r += 1) {
           const brick = this.bricks.instances[c][r];
           if (brick.status === 1) {
-            if (this.ball.xPos > brick.x
-              && this.ball.xPos < brick.x + this.bricks.width
-              && this.ball.yPos > brick.y
-              && this.ball.yPos < brick.y + this.bricks.height) {
+            if (this.ball.xPos > brick.x - this.ball.diameter
+              && this.ball.xPos < brick.x + this.bricks.width + this.ball.diameter
+              && this.ball.yPos > brick.y - this.ball.diameter
+              && this.ball.yPos < brick.y + this.bricks.height + this.ball.diameter) {
               this.ball.dy = -(this.ball.dy);
               brick.status = 0;
-              this.score += 1;
+              this.score += this.bricks.points;
+              this.paddle.width -= 1;
               this.checkEndGame();
             }
           }
@@ -306,34 +353,44 @@ export default {
       }
     },
     startCountdown() {
-      this.countdownVisible = true;
-      const countdownInterval = setInterval(() => {
+      this.gameActive = true;
+      this.countdown.visible = true;
+      const initialInterval = setInterval(() => {
         this.draw();
-        this.countdown -= 1;
-        if (this.countdown === 0) {
-          this.countdown = 'GO';
+      }, 10);
+      const countdownInterval = setInterval(() => {
+        this.countdown.number -= 1;
+        if (this.countdown.number === 0) {
+          this.countdown.number = 'GO';
         }
-      }, 2000 / 3);
+      }, this.countdown.time / (this.countdown.number + 1));
       setTimeout(() => {
         this.instructionsVisible = false;
-        this.countdownVisible = false;
+        this.countdown.visible = false;
+        clearInterval(initialInterval);
         clearInterval(countdownInterval);
         this.initGame();
-      }, 3000);
+      }, this.countdown.time);
     },
     /**
      * Check if all the bricks have been hit and are no longer visible.
      */
     checkEndGame() {
-      if (this.score === this.bricks.columns * this.bricks.rows) {
-        this.gameOver();
+      if (this.score === this.bricks.columns * this.bricks.rows * this.bricks.points) {
+        this.gameOver(true);
       }
     },
     /**
      * Stop the game.
      */
-    gameOver() {
+    gameOver(win = false) {
       this.gameEnded = true;
+      if (win) {
+        this.win = true;
+        this.$nextTick(() => {
+          this.draw();
+        });
+      }
       clearInterval(this.interval);
       this.gameActive = false;
     },
@@ -345,6 +402,11 @@ export default {
       Object.assign(this.$data, this.getInitialState());
       this.initGameProperties();
     },
+    /**
+     * If instructions are visible (the game is already reset) then
+     * start countdown to start the game. Else, reset the game
+     * and show instructions on screen.
+     */
     onSpacePressed() {
       if (!this.instructionsVisible) {
         this.resetGame();

@@ -1,5 +1,12 @@
 <template>
-  <canvas ref="canvas" :width="canvas.width" :height="canvas.height" />
+  <canvas
+    ref="canvas"
+    :width="canvas.width"
+    :height="canvas.height"
+    :style="{
+      backgroundColor: canvas.background
+    }"
+  />
 </template>
 
 <script>
@@ -8,49 +15,53 @@ import { setInterval, clearInterval } from 'timers';
 export default {
   name: 'Canvas',
   data() {
-    return {
-      ctx: null,
-      interval: null,
-      rightPressed: false,
-      leftPressed: false,
-      canvas: {
-        width: 250,
-        height: 300,
-      },
-      ball: {
-        diameter: 8,
-        xPos: null,
-        yPos: null,
-        dx: 2,
-        dy: 2,
-      },
-      paddle: {
-        width: 75,
-        height: 10,
-        xPos: null,
-      },
-      bricks: {
-        columns: 5,
-        rows: 3,
-        width: 20,
-        height: 20,
-        padding: 10,
-        xOffset: 30,
-        yOffset: 30,
-        instances: [],
-      },
-    };
+    return this.getInitialState();
   },
   mounted() {
-    this.ctx = this.$refs.canvas.getContext('2d');
-    this.initBallProperties();
-    this.initPaddleProperties();
-    this.initBricks();
+    this.initGameProperties();
     document.addEventListener('keydown', this.onKeyDown);
     document.addEventListener('keyup', this.onKeyUp);
-    this.interval = setInterval(this.draw, 10);
+    this.draw();
   },
   methods: {
+    getInitialState() {
+      return {
+        ctx: null,
+        interval: null,
+        rightPressed: false,
+        leftPressed: false,
+        gameActive: false,
+        score: 0,
+        canvas: {
+          width: 250,
+          height: 280,
+          color: '#eeeeee',
+          background: '#333333',
+        },
+        ball: {
+          diameter: 8,
+          xPos: null,
+          yPos: null,
+          dx: 2,
+          dy: 2,
+        },
+        paddle: {
+          width: 75,
+          height: 10,
+          xPos: null,
+        },
+        bricks: {
+          columns: 5,
+          rows: 3,
+          width: 20,
+          height: 20,
+          padding: 10,
+          xOffset: 30,
+          yOffset: 30,
+          instances: [],
+        },
+      };
+    },
     initBallProperties() {
       this.ball.xPos = this.getCanvasWidth() / 2;
       this.ball.yPos = this.getCanvasHeight() / 2;
@@ -66,11 +77,31 @@ export default {
         }
       }
     },
+    initGameProperties() {
+      this.ctx = this.$refs.canvas.getContext('2d');
+      this.canvas.width = this.getParentContainerWidth();
+      this.canvas.height = this.getParentContainerHeight();
+      this.initBallProperties();
+      this.initPaddleProperties();
+      this.initBricks();
+    },
     getCanvasWidth() {
       return this.canvas.width;
     },
     getCanvasHeight() {
       return this.canvas.height;
+    },
+    getParentContainerWidth() {
+      const styles = window.getComputedStyle(this.$el.parentElement);
+      return styles.getPropertyValue('width').replace('px', '');
+    },
+    getParentContainerHeight() {
+      const styles = window.getComputedStyle(this.$el.parentElement);
+      return styles.getPropertyValue('height').replace('px', '');
+    },
+    initGame() {
+      this.gameActive = true;
+      this.interval = setInterval(this.draw, 10);
     },
     draw() {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -79,11 +110,12 @@ export default {
       this.drawPaddle();
       this.drawBricks();
       this.detectBrickCollision();
+      this.drawScore();
     },
     drawBall() {
       this.ctx.beginPath();
       this.ctx.arc(this.ball.xPos, this.ball.yPos, this.ball.diameter, 0, Math.PI * 2);
-      this.ctx.fillStyle = '#0095DD';
+      this.ctx.fillStyle = this.canvas.color;
       this.ctx.fill();
       this.ctx.closePath();
       this.ball.xPos += this.ball.dx;
@@ -98,7 +130,7 @@ export default {
         this.paddle.width,
         this.paddle.height,
       );
-      this.ctx.fillStyle = '#0095DD';
+      this.ctx.fillStyle = this.canvas.color;
       this.ctx.fill();
       this.ctx.closePath();
     },
@@ -113,12 +145,17 @@ export default {
             this.bricks.instances[c][r].y = brickYPos;
             this.ctx.beginPath();
             this.ctx.rect(brickXPos, brickYPos, this.bricks.width, this.bricks.height);
-            this.ctx.fillStyle = '#0095DD';
+            this.ctx.fillStyle = this.canvas.color;
             this.ctx.fill();
             this.ctx.closePath();
           }
         }
       }
+    },
+    drawScore() {
+      this.ctx.font = '16px Arial';
+      this.ctx.fillStyle = this.canvas.color;
+      this.ctx.fillText(`Score: ${this.score}`, 8, 20);
     },
     checkBoundaries() {
       if (this.ball.xPos < this.ball.diameter
@@ -135,7 +172,7 @@ export default {
           this.ball.dy = -(this.ball.dy);
         }
       } else if (this.ball.yPos > this.canvas.height - this.ball.diameter) {
-        clearInterval(this.interval);
+        this.gameOver();
       }
     },
     movePaddle() {
@@ -160,17 +197,38 @@ export default {
               && this.ball.yPos < brick.y + this.bricks.height) {
               this.ball.dy = -(this.ball.dy);
               brick.status = 0;
+              this.score += 1;
+              this.checkEndGame();
             }
           }
         }
       }
     },
+    checkEndGame() {
+      if (this.score === this.bricks.columns * this.bricks.rows) {
+        this.gameOver();
+      }
+    },
+    gameOver() {
+      clearInterval(this.interval);
+    },
+    resetGame() {
+      Object.assign(this.$data, this.initialState());
+    },
     onKeyDown(e) {
       if (e.key === 'Right' || e.key === 'ArrowRight') {
         this.rightPressed = true;
+        if (this.gameActive === false) {
+          // this.resetGame();
+          this.initGame();
+        }
       }
       if (e.key === 'Left' || e.key === 'ArrowLeft') {
         this.leftPressed = true;
+        if (this.gameActive === false) {
+          // this.resetGame();
+          this.initGame();
+        }
       }
     },
     onKeyUp(e) {
@@ -186,7 +244,4 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-canvas {
-  background-color: #eee;
-}
 </style>

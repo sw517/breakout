@@ -140,6 +140,8 @@ export default {
      */
     initGameProperties() {
       this.ctx = this.$refs.canvas.getContext('2d');
+      const dpr = window.devicePixelRatio;
+      this.ctx.scale(dpr, dpr);
       this.canvas.width = this.getParentContainerWidth();
       this.canvas.height = this.getParentContainerHeight();
       this.initBallProperties();

@@ -1,8 +1,8 @@
 <template>
   <canvas
     ref="canvas"
-    :width="canvas.width"
-    :height="canvas.height"
+    :width="canvas.pixelWidth"
+    :height="canvas.pixelHeight"
     :style="{
       backgroundColor: canvas.background
     }"
@@ -59,7 +59,7 @@ export default {
         gameActive: false,
         instructionsVisible: true,
         countdown: {
-          visible: false,
+          isVisible: false,
           time: 3000,
           number: 3,
         },
@@ -69,6 +69,8 @@ export default {
         canvas: {
           width: 250,
           height: 280,
+          pixelWidth: 250,
+          pixelHeight: 280,
           color: '#ccc',
           background: '#333333',
         },
@@ -139,11 +141,21 @@ export default {
      * and bricks.
      */
     initGameProperties() {
-      this.ctx = this.$refs.canvas.getContext('2d');
-      const dpr = window.devicePixelRatio;
-      this.ctx.scale(dpr, dpr);
+      const dpr = window.devicePixelRatio || 1;
+
       this.canvas.width = this.getParentContainerWidth();
       this.canvas.height = this.getParentContainerHeight();
+
+      this.$refs.canvas.style.width = `${this.canvas.width}px`;
+      this.$refs.canvas.style.height = `${this.canvas.height}px`;
+
+      this.canvas.pixelWidth = this.canvas.width * dpr;
+      this.canvas.pixelHeight = this.canvas.height * dpr;
+
+      this.ctx = this.$refs.canvas.getContext('2d');
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Prevent context.scale doubling when reset
+      this.ctx.scale(dpr, dpr); // Scale the drawings to match the dimensions of the canvas
+
       this.initBallProperties();
       this.initPaddleProperties();
       this.initBricks();
@@ -187,7 +199,7 @@ export default {
       if (this.instructionsVisible) {
         this.drawIntructions();
       }
-      if (this.countdown.visible) {
+      if (this.countdown.isVisible) {
         this.drawCountdown();
       }
       if (this.gameEnded) {
@@ -356,7 +368,7 @@ export default {
     },
     startCountdown() {
       this.gameActive = true;
-      this.countdown.visible = true;
+      this.countdown.isVisible = true;
       const initialInterval = setInterval(() => {
         this.draw();
       }, 10);
@@ -368,7 +380,7 @@ export default {
       }, this.countdown.time / (this.countdown.number + 1));
       setTimeout(() => {
         this.instructionsVisible = false;
-        this.countdown.visible = false;
+        this.countdown.isVisible = false;
         clearInterval(initialInterval);
         clearInterval(countdownInterval);
         this.initGame();

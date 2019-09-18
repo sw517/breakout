@@ -11,7 +11,7 @@
       </div>
       <div class="controls">
         <div class="controls__menu">
-          <div
+          <button
             @mousedown="onBtnPressed('start')"
             @mouseup="onBtnPressed('start')"
             @touchstart="onBtnPressed('start')"
@@ -20,10 +20,10 @@
             :class="{ 'pressed' : startBtnPressed }"
           >
             Start
-          </div>
+          </button>
         </div>
         <div class="controls__directions">
-          <div
+          <button
             @mousedown="onBtnPressed('left')"
             @mouseup="onBtnPressed('left')"
             @touchstart="onBtnPressed('left')"
@@ -32,8 +32,8 @@
             :class="{ 'pressed' : leftBtnPressed }"
           >
             &lt;
-          </div>
-          <div
+          </button>
+          <button
             @mousedown="onBtnPressed('right')"
             @mouseup="onBtnPressed('right')"
             @touchstart="onBtnPressed('right')"
@@ -42,7 +42,7 @@
             :class="{ 'pressed' : rightBtnPressed }"
           >
             &gt;
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -118,6 +118,20 @@ html,body {
   background-color: #3faf81;
   border-radius: 8px;
   box-shadow: 0 0 20px 2px #000;
+}
+
+@media
+only screen and (-webkit-min-device-pixel-ratio: 2),
+only screen and (   min--moz-device-pixel-ratio: 2),
+only screen and (     -o-min-device-pixel-ratio: 2/1),
+only screen and (        min-device-pixel-ratio: 2),
+only screen and (                min-resolution: 192dpi),
+only screen and (                min-resolution: 2dppx) {
+  /* Retina-specific stuff here */
+  .gamepad {
+    max-width: 450px;
+    max-height: 800px;
+  }
 }
 
 .power-led {

@@ -14,8 +14,8 @@
           <button
             @mousedown="onBtnPressed('start')"
             @mouseup="onBtnPressed('start')"
-            @touchstart="onBtnPressed('start')"
-            @touchend="onBtnPressed('start')"
+            @touchstart.prevent="onBtnPressed('start')"
+            @touchend.prevent="onBtnPressed('start')"
             class="controls__btn controls__start"
             :class="{ 'pressed' : startBtnPressed }"
           >
@@ -26,8 +26,8 @@
           <button
             @mousedown="onBtnPressed('left')"
             @mouseup="onBtnPressed('left')"
-            @touchstart="onBtnPressed('left')"
-            @touchend="onBtnPressed('left')"
+            @touchstart.prevent="onBtnPressed('left')"
+            @touchend.prevent="onBtnPressed('left')"
             class="controls__btn left"
             :class="{ 'pressed' : leftBtnPressed }"
           >
@@ -36,8 +36,8 @@
           <button
             @mousedown="onBtnPressed('right')"
             @mouseup="onBtnPressed('right')"
-            @touchstart="onBtnPressed('right')"
-            @touchend="onBtnPressed('right')"
+            @touchstart.prevent="onBtnPressed('right')"
+            @touchend.prevent="onBtnPressed('right')"
             class="controls__btn right"
             :class="{ 'pressed' : rightBtnPressed }"
           >
@@ -69,12 +69,16 @@ export default {
       switch (direction) {
         case 'left':
           this.leftBtnPressed = !this.leftBtnPressed;
+          this.rightBtnPressed = false; // Ensure user did not slide off button
           break;
         case 'right':
           this.rightBtnPressed = !this.rightBtnPressed;
+          this.leftBtnPressed = false; // Ensure user did not slide off button
           break;
         default:
           this.startBtnPressed = !this.startBtnPressed;
+          this.rightBtnPressed = false; // Ensure user did not slide off button
+          this.leftBtnPressed = false; // Ensure user did not slide off button
       }
     },
   },
@@ -99,6 +103,7 @@ html,body {
   -moz-osx-font-smoothing: grayscale;
   width: 100%;
   height: 100%;
+  padding: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -167,6 +172,10 @@ only screen and (                min-resolution: 2dppx) {
     background-color: #333;
     color: #b1b1b1;
     user-select: none;
+    border: 0;
+    font-size: 1rem;
+    box-shadow: 0px 0px 0 4px #222;
+    outline: none;
 
     &.pressed {
       box-shadow: inset 0 0 4px 3px #111;
@@ -186,10 +195,17 @@ only screen and (                min-resolution: 2dppx) {
     display: flex;
     justify-content: space-between;
     flex-grow: 1;
+    margin-left: 50%;
 
     .controls__btn {
-      width: 45%;
-      border-radius: 10px;
+      margin-top: 60%;
+      width: 48%;
+      border-radius: 100%;
+
+      + .controls__btn {
+        margin-top: 0;
+        margin-bottom: 60%;
+      }
     }
   }
 }

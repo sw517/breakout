@@ -43,6 +43,7 @@ export default {
     document.addEventListener('keydown', this.onKeyDown);
     document.addEventListener('keyup', this.onKeyUp);
     this.$nextTick(() => {
+      this.initGameProperties();
       this.draw();
     });
   },
@@ -299,9 +300,13 @@ export default {
      */
     checkBoundaries() {
       // Check if ball hits left or right side of canvas.
-      if (this.ball.xPos < this.ball.diameter
-        || this.ball.xPos > this.canvas.width - this.ball.diameter) {
-        this.ball.dx = -(this.ball.dx);
+      // Seperate conditionals used with Math.abs instead of simply
+      // toggling this.ball.dx because the ball can get stuck to the edge
+      // of the screen when the xPos overlaps the screen edge.
+      if (this.ball.xPos < this.ball.diameter) {
+        this.ball.dx = Math.abs(this.ball.dx);
+      } else if (this.ball.xPos > this.canvas.width - this.ball.diameter) {
+        this.ball.dx = -Math.abs(this.ball.dx);
       }
       // Check if ball hits top of canvas.
       if (this.ball.yPos < this.ball.diameter) {
@@ -356,6 +361,7 @@ export default {
               && this.ball.xPos < brick.x + this.bricks.width + this.ball.diameter
               && this.ball.yPos > brick.y - this.ball.diameter
               && this.ball.yPos < brick.y + this.bricks.height + this.ball.diameter) {
+              // const direction = this.getBrickCollisionDirection(brick);
               this.ball.dy = -(this.ball.dy);
               brick.status = 0;
               this.score += this.bricks.points;
@@ -365,6 +371,27 @@ export default {
           }
         }
       }
+    },
+    /**
+     * Get the side of the brick that the ball hit and return
+     * whether it was in a horizontal (left/right) or vertical
+     * (top/bottom) direction.
+     */
+    getBrickCollisionDirection(brick) {
+      const left = { dir: 'left', val: Math.abs(brick.x - this.ball.xPos) };
+      const right = { dir: 'right', val: Math.abs((brick.x + this.bricks.width) - this.ball.xPos) };
+      const top = { dir: 'top', val: Math.abs(brick.y - this.ball.yPos) };
+      const bottom = { dir: 'bottom', val: Math.abs((brick.y + this.bricks.height) - this.ball.yPos) };
+
+      const directions = [left, right, top, bottom];
+      const closestDirection = directions.reduce(
+        (closest, current) => (closest.val < current.val ? closest : current), [directions[0]],
+      );
+      console.log({
+        left, right, top, bottom,
+      });
+      console.log(closestDirection);
+      return 'vertical';
     },
     startCountdown() {
       this.gameActive = true;
